@@ -1,0 +1,4 @@
+Really quick and dirty program to ingest a directory of GPX files and
+write out a chart with a running total of the miles traveled in the
+past 30 days.  Takes a directory path as a command line argument,
+writes HTML to STDOUT
