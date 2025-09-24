@@ -9,16 +9,16 @@ import (
 )
 
 import (
-	"github.com/tkrajina/gpxgo/gpx"
 	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/components"
+	"github.com/go-echarts/go-echarts/v2/opts"
+	"github.com/tkrajina/gpxgo/gpx"
 )
 
 const METERS_PER_MILE = 1609.34
 const WINDOW_SIZE = time.Hour * 24 * 30 // 30 days
-const LOOKBACK = time.Hour * 24 * 365 // 365 days
-const GRANULARITY = time.Hour * 24 // 1 day
+const LOOKBACK = time.Hour * 24 * 365   // 365 days
+const GRANULARITY = time.Hour * 24      // 1 day
 
 func main() {
 	now := time.Now().Add(time.Hour * 24).Round(GRANULARITY)
@@ -130,9 +130,21 @@ func writeChart(now time.Time, mileage map[int64]float64) {
 	items := []opts.LineData{}
 	xAxis := []time.Time{}
 
+	lastValue := float64(-5)
+	hasDup := false
 	for t := oldestAggregatedTime(now); t.Before(now); t = t.Add(GRANULARITY) {
 		//xAxis = append(xAxis, t)
-		value := []interface{} {t, mileage[t.Unix()]}
+		miles := mileage[t.Unix()]
+		if miles == lastValue {
+			hasDup = true
+			continue
+		} else if hasDup {
+			hasDup = false
+			previousValue := []interface{}{t.Add(GRANULARITY * -1), lastValue}
+			items = append(items, opts.LineData{Value: previousValue})
+		}
+		value := []interface{}{t, miles}
+		lastValue = miles
 		items = append(items, opts.LineData{Value: value})
 	}
 
@@ -142,7 +154,7 @@ func writeChart(now time.Time, mileage map[int64]float64) {
 	line.SetGlobalOptions(
 		charts.WithInitializationOpts(
 			opts.Initialization{
-				Width: "1800px",
+				Width:  "1800px",
 				Height: "900px",
 			},
 		),
@@ -152,9 +164,7 @@ func writeChart(now time.Time, mileage map[int64]float64) {
 			},
 		),
 		charts.WithDataZoomOpts(
-			opts.DataZoom{
-
-			},
+			opts.DataZoom{},
 		),
 	)
 
